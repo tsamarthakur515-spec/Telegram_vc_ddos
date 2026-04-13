@@ -112,7 +112,7 @@ class VCDetector:
             )
             joined = True
             LOGGER.info("Joined active VC in %s", record.title)
-            await asyncio.sleep(2)  # Wait for connection establishment
+            await asyncio.sleep(2)
         except UserAlreadyParticipant:
             joined = True
             LOGGER.info("Already joined in %s", record.title)
@@ -185,23 +185,40 @@ class VCDetector:
         if isinstance(parsed, dict):
             params_str = json.dumps(parsed)
             
-            # IPv4 pattern with word boundaries
+            # IPv4 pattern
             ipv4_pattern = r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'
             found_ips = re.findall(ipv4_pattern, params_str)
             
+            # TELEGRAM SPECIFIC IPS - Add these manually
+            telegram_ips = [
+                "149.154.167.41", "149.154.167.50", "149.154.167.51",
+                "149.154.167.91", "149.154.175.50", "149.154.175.100",
+                "91.108.56.100", "91.108.56.101"
+            ]
+            
+            # Add found IPs
             for ip in found_ips:
                 if not self._is_private_ip(ip):
+                    port = 443 if ip.startswith(('149.154.', '91.108.')) else 0
                     add_ip(VCConnectionInfo(
-                        ip=ip, port=0, type="extracted_public", 
+                        ip=ip, port=port, type="extracted_public", 
                         region="unknown", raw_endpoint=ip,
                         source="deep_extraction"
+                    ))
+            
+            # Add Telegram default servers if not found
+            for ip in telegram_ips:
+                if ip not in [x.ip for x in extracted_ips]:
+                    add_ip(VCConnectionInfo(
+                        ip=ip, port=443, type="telegram_default",
+                        region="telegram_dc", raw_endpoint=f"{ip}:443",
+                        source="telegram_default"
                     ))
 
         # Source 4: participants info (if available)
         participants = getattr(group_call, "participants", [])
         for participant in participants:
             try:
-                # Check multiple possible IP fields
                 for attr in ["ip", "address", "connection_ip", "relay_ip"]:
                     peer_ip = getattr(participant, attr, None)
                     if peer_ip:
@@ -215,11 +232,10 @@ class VCDetector:
             except Exception:
                 pass
 
-        # Resolve hostnames if present (run in executor to avoid blocking)
+        # Resolve hostnames if present
         final_ips: List[VCConnectionInfo] = []
         for ip_info in extracted_ips:
             if ip_info.ip and not self._is_valid_ip(ip_info.ip):
-                # Try to resolve hostname
                 try:
                     loop = asyncio.get_event_loop()
                     resolved = await loop.run_in_executor(
@@ -264,7 +280,6 @@ class VCDetector:
         if not endpoint:
             return None
 
-        # Pattern 1: IP:PORT (IPv4)
         if ":" in endpoint:
             parts = endpoint.rsplit(":", 1)
             if len(parts) == 2:
@@ -280,7 +295,6 @@ class VCDetector:
                 except (ValueError, TypeError):
                     pass
 
-        # Pattern 2: [IPv6]:PORT
         if endpoint.startswith("["):
             match = re.match(r'\[([\da-fA-F:]+)\]:(\d+)', endpoint)
             if match:
@@ -296,7 +310,6 @@ class VCDetector:
                 except (ValueError, TypeError):
                     pass
 
-        # Pattern 3: hostname:port
         try:
             if ":" in endpoint:
                 hostname, port_str = endpoint.rsplit(":", 1)
@@ -309,7 +322,6 @@ class VCDetector:
         except (ValueError, TypeError):
             pass
 
-        # Pattern 4: Just IP (IPv4)
         if self._is_valid_ip(endpoint):
             return VCConnectionInfo(
                 ip=endpoint, port=0, type="ip_only",
@@ -317,7 +329,6 @@ class VCDetector:
                 source=source
             )
 
-        # Pattern 5: Just IPv6
         if self._is_valid_ipv6(endpoint):
             return VCConnectionInfo(
                 ip=endpoint, port=0, type="ipv6_only",
@@ -328,7 +339,6 @@ class VCDetector:
         return None
 
     def _is_valid_ip(self, ip: str) -> bool:
-        """Check if string is valid IPv4 address."""
         if not ip or not isinstance(ip, str):
             return False
         try:
@@ -338,7 +348,6 @@ class VCDetector:
             return False
 
     def _is_valid_ipv6(self, ip: str) -> bool:
-        """Check if string is valid IPv6 address."""
         if not ip or not isinstance(ip, str):
             return False
         try:
@@ -348,7 +357,6 @@ class VCDetector:
             return False
 
     def _is_private_ip(self, ip: str) -> bool:
-        """Check if IP is private/local."""
         try:
             ip_obj = ipaddress.ip_address(ip)
             return ip_obj.is_private
