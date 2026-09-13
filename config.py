@@ -44,11 +44,11 @@ class Config:
         scan_limit = max(1, min(int(os.getenv("SCAN_LIMIT", "50")), 50))
 
         return cls(
-            api_id=int(required["10079905"]),
-            api_hash=str(required["e4a5fa251e2e055f26e5c2add8401530"]),
-            bot_token=str(required["8706433441:AAFJxJ7j3Lf9HANX_-V2cM0ygMkylZIT8ic"]),
-            session_string=str(required["BQC86fAAw2rC7DEINQ1pozAAMKIhGdfL15ppowCMJ9VZMl3VEBELTU4sFh5VaL_44cobX4WnmJOtcycRALtY5eotO0_QCA0lSapR1hTv97rysTtE_wlSDCcqL-A53YszOG8LXmfrDSwde9Lqny7FDb6HM-FAx2slKyg8FiuwzdSoIAPabcSZOfMJdQRiOeVRlhuALTYtf_9R5zdQhKl1R_95G7D-dYZ_hGTEiNqa-XBMaMFU8MJqKtuqrSZ4YtUG8YXSRnS44bSSZsohir8Nz3lx25ir8TzVsZDnwzXvtYxXATNSiVkQ1D7yzgSwb13EoeQ3L3F_UbfSmY6kunc7leKyWr8dbQAAAAH-nwzIAA"]),
-            admin_id=int(os.getenv("8841848847")) if os.getenv("8841848847") else None,
+            api_id=int("10079905"),
+            api_hash=str("e4a5fa251e2e055f26e5c2add8401530"),
+            bot_token=str("8706433441:AAFJxJ7j3Lf9HANX_-V2cM0ygMkylZIT8ic"),
+            session_string=str("BQC86fAAw2rC7DEINQ1pozAAMKIhGdfL15ppowCMJ9VZMl3VEBELTU4sFh5VaL_44cobX4WnmJOtcycRALtY5eotO0_QCA0lSapR1hTv97rysTtE_wlSDCcqL-A53YszOG8LXmfrDSwde9Lqny7FDb6HM-FAx2slKyg8FiuwzdSoIAPabcSZOfMJdQRiOeVRlhuALTYtf_9R5zdQhKl1R_95G7D-dYZ_hGTEiNqa-XBMaMFU8MJqKtuqrSZ4YtUG8YXSRnS44bSSZsohir8Nz3lx25ir8TzVsZDnwzXvtYxXATNSiVkQ1D7yzgSwb13EoeQ3L3F_UbfSmY6kunc7leKyWr8dbQAAAAH-nwzIAA"),
+            admin_id=int("8841848847") if "8841848847" else None,
             max_duration=max_duration,
             max_threads=max_threads,
             scan_limit=scan_limit,
